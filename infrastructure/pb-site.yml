@@ -1,0 +1,29 @@
+---
+# Create infrastructure
+- name: infrastructure
+  import_playbook: pb-infrastructure.yml
+
+# Apply common configuration to all hosts (eg. update servers).
+- name: update
+  import_playbook: pb-update.yml
+
+# Set up K8s main dependencies.
+- name: kubernetes-main
+  import_playbook: pb-kube_main.yml
+
+# Set up K8s master node.
+- name: kubernetes-master
+  import_playbook: pb-master.yml
+
+# Set up K8s worker nodes.
+- name: kubernetes-nodes
+  import_playbook: pb-nodes.yml
+
+# Set up File server.
+- name: nfs
+  import_playbook: pb-nfs.yml
+
+
+# Set up global config.
+- name: k8-dep
+  import_playbook: pb-kube-global.yml

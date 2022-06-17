@@ -1,0 +1,101 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: {{.Values.env_name}}
+  name: {{.Values.proxy_name}}
+  labels:
+    app: {{.Values.proxy_name}}
+spec:
+  selector:
+    matchLabels:
+      app: {{.Values.proxy_name}}
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: {{.Values.proxy_name}}
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:alpine
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/conf.d/
+      volumes:
+        - name: nginx-config
+          configMap:
+            name: nginxconfig
+            items:
+              - key: nginx.conf
+                path: default.conf
+---
+kind: Service
+apiVersion: v1
+metadata:
+  namespace: {{.Values.env_name}}
+  name: {{.Values.proxy_svc}}
+spec:
+  type: NodePort
+  selector:
+    app: {{.Values.proxy_name}}
+  ports:
+  - protocol: TCP
+    port: 80
+    nodePort: {{.Values.proxy_port}}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: {{.Values.env_name}}
+  name: nginxconfig
+data:
+  nginx.conf: |
+    upstream svc {
+        server {{.Values.client_svc}}.{{.Values.env_name}}.svc.cluster.local:{{.Values.client_port}} fail_timeout=0;
+    }
+
+    upstream koa {
+        server {{.Values.server_svc}}.{{.Values.env_name}}.svc.cluster.local:{{.Values.server_port}} fail_timeout=0;
+    }
+
+    upstream pgadmin {
+        server {{.Values.pgadmin_svc}}.{{.Values.env_name}}.svc.cluster.local:{{.Values.pgadmin_port}} fail_timeout=0;
+    }
+    
+    server {
+        listen      {{.Values.lb_port}};
+        server_name {{.Values.lb_ip}};
+
+        location / {
+            proxy_pass http://svc;
+        }
+
+        location /pgadmin/ {
+            proxy_set_header X-Script-Name /pgadmin;
+            proxy_set_header Host $host;
+            proxy_pass http://pgadmin/;
+            proxy_redirect off;
+        }
+
+        
+        location /api {
+            proxy_pass http://koa;
+        }
+
+        location /socket.io {
+                proxy_pass http://koa;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection "Upgrade";
+                
+                proxy_http_version 1.1;
+                
+                proxy_set_header X-Forwarded-Port: $server_port;
+                proxy_set_header X-Forwarded-Host: $host;
+                proxy_set_header X-Forwarded-Proto: $scheme;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header Host $host;
+                proxy_set_header X-NginX-Proxy true;
+                proxy_redirect off;
+        }
+    }

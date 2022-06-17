@@ -1,0 +1,19 @@
+variables:
+  MVN_OPTS: "-Dmaven.repo.local=/cache"
+  CI_CLIENT_PATH: client
+  CI_SERVER_PATH: server
+  CI_POSTGRES_PATH: postgres
+  CI_COMPILE_STAGE: compile
+  CI_TEST_STAGE: test
+  CI_BUILD_STAGE: build
+  CI_ACCEPTANCE_STAGE: acceptance
+  CI_DEPLOY_STAGE: deploy
+  CI_RUNNER_TAG: k8-runner
+  dev_env: "development"
+  dev_proxy_port: "32163"
+  dev_listen_port: "443"
+  dev_listen_ip: "kubernetes.default.svc.cluster.local"
+  prod_env: "production"
+  prod_proxy_port: "32162"
+  prod_listen_port: "80"
+  prod_listen_ip: "194.47.177.79"

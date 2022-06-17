@@ -1,0 +1,29 @@
+# Eslint test
+.eslint:
+  image: node:16-alpine
+  stage: test
+  script:
+    - echo test $CI_APP_PATH eslint here
+    - cd $CI_APP_PATH
+    - npm run ci-lint
+  cache:
+    key: "$CI_APP_PATH-$CI_COMMIT_REF_SLUG"
+    paths:
+      - $CI_APP_PATH/node_modules
+  tags:
+    - $CI_RUNNER_TAG
+
+# Unit test
+.unit-test:
+  image: node:16-alpine
+  stage: test
+  script:
+    - echo unit-test $CI_APP_PATH here
+    - cd $CI_APP_PATH
+    - npm run ci-test
+  cache:
+    key: "$CI_APP_PATH-$CI_COMMIT_REF_SLUG"
+    paths:
+      - $CI_APP_PATH/node_modules
+  tags:
+    - $CI_RUNNER_TAG

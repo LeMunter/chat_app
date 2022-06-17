@@ -1,0 +1,150 @@
+---
+# Source: gitlab-runner/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gitlab-runner-gitlab-runner
+  labels:
+    app: gitlab-runner-gitlab-runner
+    chart: gitlab-runner-0.35.3
+    release: "gitlab-runner"
+    heritage: "Helm"
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: gitlab-runner-gitlab-runner
+  template:
+    metadata:
+      labels:
+        app: gitlab-runner-gitlab-runner
+        chart: gitlab-runner-0.35.3
+        release: "gitlab-runner"
+        heritage: "Helm"
+      annotations:
+        checksum/configmap: 530409763dc7af61a931de48976d5225e3c53cb5347fffb0df72ed37e5bd01a1
+        checksum/secrets: 6391e5fe33d9bacd4a62194d88c4100b15adda0c13de5522d2c45a807cea33c7
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: "9252"
+    spec:
+      securityContext:
+        runAsUser: 100
+        fsGroup: 65533
+      terminationGracePeriodSeconds: 3600
+      initContainers:
+      - name: configure
+        command: ['sh', '/configmaps/configure']
+        image: gitlab/gitlab-runner:alpine-v14.5.2
+        imagePullPolicy: "IfNotPresent"
+        securityContext:
+          allowPrivilegeEscalation: false
+        env:
+                
+        - name: CI_SERVER_URL
+          value: "https://gitlab.lnu.se/"
+        - name: CLONE_URL
+          value: ""
+        - name: RUNNER_EXECUTOR
+          value: "kubernetes"
+        - name: REGISTER_LOCKED
+          value: "true"
+        - name: RUNNER_TAG_LIST
+          value: "k8-runner"
+        - name: KUBERNETES_PRIVILEGED
+          value: "true"
+        - name: KUBERNETES_NAMESPACE
+          value: "default"
+        volumeMounts:
+        - name: runner-secrets
+          mountPath: /secrets
+          readOnly: false
+        - name: configmaps
+          mountPath: /configmaps
+          readOnly: true
+        - name: init-runner-secrets
+          mountPath: /init-secrets
+          readOnly: true
+        resources:
+          {}
+      serviceAccountName: gitlab-runner-gitlab-runner
+      containers:
+      - name: gitlab-runner-gitlab-runner
+        image: gitlab/gitlab-runner:alpine-v14.5.2
+        imagePullPolicy: "IfNotPresent"
+        securityContext:
+          allowPrivilegeEscalation: false
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/entrypoint", "unregister", "--all-runners"]
+        command: ["/usr/bin/dumb-init", "--", "/bin/bash", "/configmaps/entrypoint"]
+        env:
+                
+        - name: CI_SERVER_URL
+          value: "https://gitlab.lnu.se/"
+        - name: CLONE_URL
+          value: ""
+        - name: RUNNER_EXECUTOR
+          value: "kubernetes"
+        - name: REGISTER_LOCKED
+          value: "true"
+        - name: RUNNER_TAG_LIST
+          value: "k8-runner"
+        - name: KUBERNETES_PRIVILEGED
+          value: "true"
+        - name: KUBERNETES_NAMESPACE
+          value: "default"
+        livenessProbe:
+          exec:
+            command: ["/bin/bash", "/configmaps/check-live"]
+          initialDelaySeconds: 60
+          timeoutSeconds: 1
+          periodSeconds: 10
+          successThreshold: 1
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command: ["/usr/bin/pgrep","gitlab.*runner"]
+          initialDelaySeconds: 10
+          timeoutSeconds: 1
+          periodSeconds: 10
+          successThreshold: 1
+          failureThreshold: 3
+        ports:
+        - name: "metrics"
+          containerPort: 9252
+        volumeMounts:
+        - name: cache-vol
+          mountPath: /cache
+        - name: runner-secrets
+          mountPath: /secrets
+        - name: etc-gitlab-runner
+          mountPath: /home/gitlab-runner/.gitlab-runner
+        - name: configmaps
+          mountPath: /configmaps
+        resources:
+          {}
+      volumes:
+      - name: cache-vol
+        persistentVolumeClaim:
+          claimName: gitlabrunner-claim
+      - name: runner-secrets
+        emptyDir:
+          medium: "Memory"
+      - name: etc-gitlab-runner
+        emptyDir:
+          medium: "Memory"
+      - name: init-runner-secrets
+        projected:
+          sources:
+            - secret:
+                name: "gitlab-runner-gitlab-runner"
+                items:
+                  - key: runner-registration-token
+                    path: runner-registration-token
+                  - key: runner-token
+                    path: runner-token
+      - name: configmaps
+        configMap:
+          name: gitlab-runner-gitlab-runner

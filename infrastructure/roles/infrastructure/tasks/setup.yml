@@ -1,0 +1,21 @@
+---
+# Task that setup ssh, inventory, and variables to be used for the automation
+
+- name: Get master ip
+  command: terraform output --raw master_ip
+  register: master_ip
+
+- name: Master ip
+  debug: msg="{{master_ip.stdout}}"
+
+- name: Waiting for SSH port to open
+  wait_for:
+    host: '{{master_ip.stdout}}'
+    state: started
+    port: 22
+    delay: 10
+    timeout: 300
+    connect_timeout: 300
+    search_regex: OpenSSH
+
+- meta: refresh_inventory

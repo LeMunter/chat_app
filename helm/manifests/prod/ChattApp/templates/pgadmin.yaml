@@ -1,0 +1,94 @@
+---
+# Source: ChattApp/templates/pgadmin.yaml
+apiVersion: v1
+kind: Secret
+type: Opaque
+metadata:
+  namespace: development
+  name: pgadmin
+data:
+  pgadmin-password: U3VwZXJTZWNyZXQ=
+---
+# Source: ChattApp/templates/pgadmin.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: development
+  name: pgadmin-config
+data:
+  servers.json: |
+    {
+        "Servers": {
+          "1": {
+            "Name": "PostgreSQL DB",
+            "Group": "Servers",
+            "Port": 5432,
+            "Username": postgres,
+            "Host": pg-svc,
+            "Password": test,
+            "MaintenanceDB": chatapp,
+            "SSLMode": "prefer"
+          }
+        }
+    }
+---
+# Source: ChattApp/templates/pgadmin.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: development
+  name: pgadmin-svc
+spec:
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 4000
+  selector:
+    app: pgadmin
+---
+# Source: ChattApp/templates/pgadmin.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  namespace: development
+  name: pgadmin
+spec:
+  serviceName: pgadmin-svc
+  podManagementPolicy: Parallel
+  replicas: 1
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: pgadmin
+  template:
+    metadata:
+      labels:
+        app: pgadmin
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+        - name: pgadmin
+          image: dpage/pgadmin4:6.3
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: PGADMIN_DEFAULT_EMAIL
+              value: test@test.com
+            - name: PGADMIN_DEFAULT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: pgadmin
+                  key: pgadmin-password
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          volumeMounts:
+            - name: pgadmin-config
+              mountPath: /pgadmin4/servers.json
+              subPath: servers.json
+              readOnly: true
+      volumes:
+        - name: pgadmin-config
+          configMap:
+            name: pgadmin-config

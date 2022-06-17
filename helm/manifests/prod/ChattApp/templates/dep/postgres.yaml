@@ -1,0 +1,62 @@
+---
+# Source: ChattApp/templates/dep/postgres.yaml
+# PostgreSQL StatefulSet Service
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: development
+  name: pg-svc
+spec:
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
+---
+# Source: ChattApp/templates/dep/postgres.yaml
+# PostgreSQL StatefulSet - ConfigMap
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: development
+  name: postgres
+spec:
+  # serviceName: pg-svc
+  selector:
+    matchLabels:
+      app: postgres
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: postgresql-db-disk
+      containers:
+        - name: postgres
+          image: postgres-img
+          imagePullPolicy: Always
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          env:
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: all-vars
+                  key: POSTGRES_DB
+            - name: POSTGRES_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: all-vars
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  name: all-vars
+                  key: POSTGRES_PASSWORD
+      imagePullSecrets:
+        - name: regcred

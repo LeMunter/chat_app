@@ -1,0 +1,11 @@
+---
+- hosts: localhost
+  tasks:
+    - name: Descrypt clouds.yaml
+      command: ansible-vault decrypt clouds.yaml --vault-password-file=.vault/password.txt
+
+    - name: Destroy
+      command: terraform destroy
+      
+    - name: Encrypt clouds.yaml
+      shell: ansible-vault encrypt clouds.yaml

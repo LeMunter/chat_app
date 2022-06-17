@@ -1,0 +1,16 @@
+# Generated from terraform template, do not edit directly.
+# Any change to this file be overwritten on next "terraform apply"
+Host 194.47.177.25
+  User ubuntu
+  Port 22
+  StrictHostKeyChecking no
+  UserKnownHostsFile=/dev/null
+  IdentityFile ~/.ssh/2dv612-project.pem
+
+Host 172.168.*
+  IdentityFile ~/.ssh/2dv612-project.pem
+  User ubuntu
+  Port 22
+  StrictHostKeyChecking no
+  UserKnownHostsFile=/dev/null
+  ProxyJump 194.47.177.25

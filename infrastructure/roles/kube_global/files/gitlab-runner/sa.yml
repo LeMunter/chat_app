@@ -1,0 +1,12 @@
+---
+# Source: gitlab-runner/templates/service-account.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  annotations:
+  name: gitlab-runner-gitlab-runner
+  labels:
+    app: gitlab-runner-gitlab-runner
+    chart: gitlab-runner-0.35.3
+    release: "gitlab-runner"
+    heritage: "Helm"

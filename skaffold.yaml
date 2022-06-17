@@ -1,0 +1,22 @@
+apiVersion: skaffold/v2beta26
+kind: Config
+profiles:
+  - name: local
+    activation:
+      - command: dev
+    deploy:
+      kubectl:
+        manifests:
+        - helm/manifests/dev/ChattApp/templates/a-ns.yaml
+        - helm/manifests/dev/ChattApp/templates/postgres.yaml
+        - helm/manifests/dev/ChattApp/templates/pgadmin.yaml
+        - helm/manifests/dev/ChattApp/templates/vars.yaml
+    build:
+      artifacts:
+      # Postgres
+      - image: postgres-img
+        context: postgres
+        docker:
+          buildArgs:
+            ENV: dev
+        

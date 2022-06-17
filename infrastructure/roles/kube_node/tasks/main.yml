@@ -1,0 +1,27 @@
+- name: Kubernetes nodes
+  block:
+    - name: Creating token for k8 Nodes
+      delegate_to: "{{ hostvars['kube-master-server']['openstack']['private_v4'] }}"
+      command: kubeadm token create --print-join-command
+      register: token
+
+    - name: Check kube services
+      delegate_to: "{{ hostvars['kube-master-server']['openstack']['private_v4'] }}"
+      shell: 'kubectl get nodes'
+      ignore_errors: True
+      no_log: True
+      register: output
+      become: yes
+      become_user: ubuntu
+
+    - name: Copying token to worker nodes
+      copy:
+        content: '{{ token.stdout }}'
+        dest: join_token
+
+    # Error when running multiple times.
+    - name: Joining worker nodes with kubernetes master
+      shell:
+        cmd: |
+          cat join_token > out.sh
+          sh out.sh

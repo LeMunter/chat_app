@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: global-vars
+data:
+    lb_ip: {{ hostvars['localhost']['lb_ip'] }}
+---

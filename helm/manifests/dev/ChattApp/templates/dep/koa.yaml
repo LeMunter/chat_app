@@ -1,0 +1,41 @@
+---
+# Source: ChattApp/templates/dep/koa.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: development
+  name: koa-backend-svc
+spec:
+  ports:
+  - port: 5000
+  selector:
+    app: koa-backend
+---
+# Source: ChattApp/templates/dep/koa.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: development
+  name: koa-backend
+spec:
+  selector:
+    matchLabels:
+      app: koa-backend
+  template:
+    metadata:
+      labels:
+        app: koa-backend
+    spec:
+      securityContext:
+        runAsUser: 1000
+      containers:
+      - name: koa-backend
+        image: server-img
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5000
+        envFrom:
+        - configMapRef:
+            name: all-vars
+      imagePullSecrets:
+        - name: regcred

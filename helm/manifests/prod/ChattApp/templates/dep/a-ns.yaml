@@ -1,0 +1,18 @@
+---
+# Source: ChattApp/templates/dep/a-ns.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  creationTimestamp: null
+  name: development
+spec: {}
+status: {}
+---
+# Source: ChattApp/templates/dep/a-ns.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  creationTimestamp: null
+  name: data
+spec: {}
+status: {}

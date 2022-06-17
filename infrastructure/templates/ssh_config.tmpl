@@ -1,0 +1,16 @@
+# Generated from terraform template, do not edit directly.
+# Any change to this file be overwritten on next "terraform apply"
+Host ${master_ip}
+  User ubuntu
+  Port 22
+  StrictHostKeyChecking no
+  UserKnownHostsFile=/dev/null
+  IdentityFile ${key_path}
+
+Host 172.168.*
+  IdentityFile ${key_path}
+  User ubuntu
+  Port 22
+  StrictHostKeyChecking no
+  UserKnownHostsFile=/dev/null
+  ProxyJump ${master_ip}

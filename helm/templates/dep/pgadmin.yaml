@@ -1,0 +1,89 @@
+apiVersion: v1
+kind: Secret
+type: Opaque
+metadata:
+  namespace: {{.Values.env_name}}
+  name: {{.Values.pgadmin_name}}
+stringData:
+  pgadmin-password: {{.Values.pgadmin_pass}}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: {{.Values.env_name}}
+  name: pgadmin-config
+data:
+  servers.json: |
+    {
+        "Servers": {
+          "1": {
+            "Name": "PostgreSQL DB",
+            "Group": "Servers",
+            "Port": {{.Values.postgres_port}},
+            "Username": {{.Values.postgres_user}},
+            "Host": {{.Values.postgres_svc}}.{{.Values.env_name}}.svc.cluster.local,
+            "Password": {{.Values.postgres_password}},
+            "MaintenanceDB": {{.Values.postgres_db_name}},
+            "SSLMode": "prefer"
+          }
+        }
+    }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: {{.Values.env_name}}
+  name: {{.Values.pgadmin_svc}}
+spec:
+  ports:
+    - protocol: TCP
+      port: {{.Values.pgadmin_port}}
+      targetPort: {{.Values.pgadmin_port}}
+  selector:
+    app: {{.Values.pgadmin_name}}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  namespace: {{.Values.env_name}}
+  name: {{.Values.pgadmin_name}}
+spec:
+  serviceName: {{.Values.pgadmin_svc}}
+  podManagementPolicy: Parallel
+  replicas: 1
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: {{.Values.pgadmin_name}}
+  template:
+    metadata:
+      labels:
+        app: {{.Values.pgadmin_name}}
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+        - name: {{.Values.pgadmin_name}}
+          image: dpage/pgadmin4:6.3
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: PGADMIN_DEFAULT_EMAIL
+              value: {{.Values.pgadmin_default_user}}
+            - name: PGADMIN_DEFAULT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{.Values.pgadmin_name}}
+                  key: pgadmin-password
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          volumeMounts:
+            - name: pgadmin-config
+              mountPath: /pgadmin4/servers.json
+              subPath: servers.json
+              readOnly: true
+      volumes:
+        - name: pgadmin-config
+          configMap:
+            name: pgadmin-config

@@ -1,0 +1,32 @@
+- name: Getting servers stuck in build
+  shell: openstack --os-cloud=openstack server list -f json | jq '.[] | select(.Status == "BUILD") | .Name'
+  register: result
+  ignore_errors: yes
+
+- debug: msg="Server(s) failed during creation:{{ result.stdout_lines }}"
+
+- name: Removing failed server(s)..
+  shell: openstack --os-cloud=openstack server delete "{{item}}"
+  loop: '{{result.stdout_lines}}'
+
+- name: Waiting for removed server(s) to die
+  pause:
+    seconds: 15
+
+- name: Getting servers stuck in error
+  shell: openstack --os-cloud=openstack server list -f json | jq '.[] | select(.Status == "ERROR") | .Name'
+  register: resulterr
+  ignore_errors: yes
+
+- debug: msg="Server(s) failed during creation:{{ resulterr.stdout_lines }}"
+
+- name: Removing failed server(s)..
+  shell: openstack --os-cloud=openstack server delete "{{item}}"
+  loop: '{{resulterr.stdout_lines}}'
+
+- name: Waiting for removed server(s) to die
+  pause:
+    seconds: 15    
+
+- name: Retrying..
+  include_tasks: create.yml

@@ -1,0 +1,56 @@
+- name: K8 master
+  block:
+    # OBS! NO error when this task have already been done
+    - name: Initializing k8s cluster
+      command: kubeadm init --pod-network-cidr=192.168.0.0/16 --ignore-preflight-errors=All #--ignore-preflight-errors=NumCPU --ignore-preflight-errors=Mem
+
+    - name: Check if $HOME/.kube exists
+      stat:
+        path: $HOME/.kube
+      become: yes
+      become_user: ubuntu
+      register: file_data
+
+    - name: Setting up kubectl on Master Node if not been done before
+      shell:
+        cmd: |
+          mkdir -p $HOME/.kube
+          sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+          sudo chown $(id -u):$(id -g) $HOME/.kube/config
+      become: yes
+      become_user: ubuntu
+      when: not file_data.stat.exists
+
+    - name: Deploying calico network
+      become: yes
+      become_user: ubuntu
+      command: kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
+
+    - name: Add user Ubuntu to Docker
+      command: usermod -aG docker ubuntu
+
+    - name: Install skaffold
+      become: yes
+      become_user: ubuntu
+      shell: | 
+        curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64
+        sudo install skaffold /usr/local/bin/
+
+
+    - name: Remove old keys
+      shell: rm /etc/kubernetes/pki/apiserver.*
+
+    - name: Update certificates
+      shell: kubeadm init phase certs apiserver --apiserver-cert-extra-sans="{{ hostvars['localhost']['master_ip'] }}"
+
+
+    - name: Install Helm
+      become: yes
+      become_user: ubuntu
+      shell: |
+        curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
+        chmod 700 get_helm.sh
+        ./get_helm.sh
+        helm repo add gitlab https://charts.gitlab.io
+        helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+        helm repo update

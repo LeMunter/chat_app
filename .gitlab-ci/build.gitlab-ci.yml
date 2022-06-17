@@ -1,0 +1,99 @@
+.build-npm:
+  rules:
+    - !reference [.rules-build-stage, rules]
+  stage: build
+  image: node:16-alpine
+  variables:
+    CI: "false" # Must be added to allow for warnings during build using craco
+  script:
+    - echo $CI_APP_PATH
+    - cd $CI_APP_PATH
+    - npm run build
+  cache:
+    key: "$CI_APP_PATH-$CI_COMMIT_REF_SLUG"
+    paths:
+      - $CI_APP_PATH/build
+      - $CI_APP_PATH/node_modules
+  tags:
+    - $CI_RUNNER_TAG
+
+.build-image:
+  rules:
+    - !reference [.rules-build-stage, rules]
+  stage: build
+  image: docker:18.09.7-dind
+  services:
+    - docker:18.09.7-dind
+  variables:
+    DOCKER_HOST: tcp://localhost:2375/
+    DOCKER_DRIVER: overlay
+    IMAGE_REG_NAME: $CI_REGISTRY_IMAGE/$CI_COMMIT_BRANCH/$CI_APP_PATH
+  before_script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+    - apk upgrade --update-cache --available
+    - apk add openssl
+    - rm -rf /var/cache/apk/*
+  script:
+    - echo $CI_REGISTRY_IMAGE
+    - cd $CI_APP_PATH
+    - openssl genrsa -out private.pem 2048
+    - openssl rsa -in private.pem -pubout -out public.pem
+    - >
+      docker build
+      --pull
+      --cache-from $IMAGE_REG_NAME:latest
+      --label "org.opencontainers.image.title=$CI_PROJECT_TITLE"
+      --label "org.opencontainers.image.url=$CI_PROJECT_URL"
+      --label "org.opencontainers.image.created=$CI_JOB_STARTED_AT"
+      --label "org.opencontainers.image.revision=$CI_COMMIT_SHA"
+      --label "org.opencontainers.image.version=$CI_COMMIT_REF_NAME"
+      --tag $IMAGE_REG_NAME:latest
+      --tag $IMAGE_REG_NAME:$CI_COMMIT_SHORT_SHA
+      .
+    - docker push $IMAGE_REG_NAME:$CI_COMMIT_SHORT_SHA
+    - docker push $IMAGE_REG_NAME:latest
+  cache:
+    key: "$CI_APP_PATH-$CI_COMMIT_REF_SLUG"
+    paths:
+      - $CI_APP_PATH/build
+      - $CI_APP_PATH/node_modules
+  tags:
+    - $CI_RUNNER_TAG
+
+.create-manifests:
+  stage: build
+  rules:
+    - !reference [.rules-build-stage, rules]
+  image:
+    name: alpine/helm
+  script:
+    - cd helm
+    - > # Create development manifests
+      helm template . --output-dir manifests/dev 
+      --set lb_ip=${dev_listen_ip} 
+      --set lb_port=${dev_listen_port} 
+      --set proxy_port=${dev_proxy_port} 
+      --set env_name=${dev_env} 
+      --set server_img=${CI_REGISTRY_IMAGE}/${CI_COMMIT_BRANCH}/${CI_SERVER_PATH}:latest
+      --set client_img=${CI_REGISTRY_IMAGE}/${CI_COMMIT_BRANCH}/${CI_CLIENT_PATH}:latest
+      --set postgres_img=${CI_REGISTRY_IMAGE}/${CI_COMMIT_BRANCH}/${CI_POSTGRES_PATH}:latest
+      --set postgres_password=${PG_PROD_PASSWORD}
+      --set adminPassword=${ADMIN_PASSWORD}
+    - > # Create production manifests
+      helm template . --output-dir manifests/prod 
+      --set lb_ip=${prod_listen_ip} 
+      --set lb_port=${prod_listen_port} 
+      --set proxy_port=${prod_proxy_port} 
+      --set env_name=${prod_env} 
+      --set server_img=${CI_REGISTRY_IMAGE}/${CI_COMMIT_BRANCH}/${CI_SERVER_PATH}:latest
+      --set client_img=${CI_REGISTRY_IMAGE}/${CI_COMMIT_BRANCH}/${CI_CLIENT_PATH}:latest
+      --set postgres_img=${CI_REGISTRY_IMAGE}/${CI_COMMIT_BRANCH}/${CI_POSTGRES_PATH}:latest
+      --set postgres_password=${PG_PROD_PASSWORD}
+      --set adminPassword=${ADMIN_PASSWORD}
+      --set postgres_vol=/var/lib/postgresql/data
+      --set pgadmin_pass=${PGADMIN_PASS}
+  artifacts:
+    paths:
+      - helm/manifests
+  tags:
+    - $CI_RUNNER_TAG

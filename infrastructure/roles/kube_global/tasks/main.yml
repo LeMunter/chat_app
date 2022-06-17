@@ -1,0 +1,53 @@
+
+- name: Create a directory if it does not exist
+  ansible.builtin.file:
+    path: '{{ kube_dir }}'
+    state: directory
+    mode: '0777'
+
+- name: Create a directory if it does not exist
+  ansible.builtin.file:
+    path: '{{ helm_dir }}'
+    state: directory
+    mode: '0777'
+    
+- name: Locating all files in files dir
+  shell: rm -r '{{ kube_dir }}'/*
+  ignore_errors: true
+
+- name: Copy files
+  become: yes
+  become_user: ubuntu
+  copy:
+    src: gitlab-runner
+    dest: "$HOME/{{ kube_dir }}"
+
+- name: Copying templates
+  become: yes
+  become_user: ubuntu
+  template:
+    src: '{{ item.local }}'
+    dest: '{{ item.remote }}'
+  loop:
+    - { local: 'provisioner-dep.yml.j2',remote: '{{ kube_dir }}/provisioner-dep.yml',}
+    - { local: 'proxy-cm.yml.j2', remote: '{{ kube_dir }}/proxy-cm.yml' }
+    - { local: 'global-vars.yml.j2', remote: '{{ kube_dir }}/global-vars.yml' }
+    - { local: 'gitlab-admin-service-account.yml.j2', remote: '{{ kube_dir }}/gitlab-admin-service-account.yml' }
+    # - { local: 'git-runner-conf.yml.j2', remote: '{{ helm_dir }}/git-runner-conf.yml' }
+    - { local: 'git-runner-pvc.yml.j2', remote: '{{ kube_dir }}/git-runner-pvc.yml' }
+    - { local: 'prometheus.yml.j2', remote: '{{ helm_dir }}/prometheus-conf.yml' }
+
+
+- name: Create manifests
+  become: yes
+  become_user: ubuntu
+  shell: |
+    helm template --name-template=prometheus -n gitlab-managed-apps --values {{ helm_dir }}/prometheus-conf.yml --output-dir ~/{{ kube_dir }}/ prometheus-community/prometheus
+    kubectl apply -f ~/{{ kube_dir }}/ --recursive
+    kubectl create namespace gitlab-managed-apps --dry-run=client -o yaml > {{ kube_dir }}/gitlab-managed-apps-ns.yml
+
+- name: Apply Manifests
+  become: yes
+  become_user: ubuntu
+  shell: | 
+    kubectl apply -f ~/{{ kube_dir }}/ --recursive

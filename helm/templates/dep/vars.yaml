@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: {{ .Values.env_name }}
+  name: all-vars
+data:
+  POSTGRES_HOST: "{{.Values.postgres_svc}}"
+  POSTGRES_PORT: "{{.Values.postgres_port}}"
+  POSTGRES_DB: {{ .Values.postgres_db_name }}
+  POSTGRES_USER: {{ .Values.postgres_user }}
+  POSTGRES_PASSWORD: {{ .Values.postgres_password }}
+  PGDATA: {{ .Values.pgdata }}
+  NODE_PORT: "{{.Values.server_port}}"
+  PUBLIC_URL: "{{.Values.public_url}}"
+  API_CLUSTER_IP: "{{.Values.server_svc}}.{{.Values.env_name}}.svc.cluster.local:{{.Values.server_port}}"
+  ADMIN_PASS: "{{.Values.adminPassword}}"

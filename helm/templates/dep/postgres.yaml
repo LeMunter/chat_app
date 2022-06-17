@@ -1,0 +1,59 @@
+# PostgreSQL StatefulSet - ConfigMap
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: {{.Values.env_name}}
+  name: {{.Values.postgres_name}}
+spec:
+  # serviceName: {{.Values.postgres_svc}}
+  selector:
+    matchLabels:
+      app: {{.Values.postgres_name}}
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: {{.Values.postgres_name}}
+    spec:
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: postgresql-db-disk
+      containers:
+        - name: {{.Values.postgres_name}}
+          image: {{.Values.postgres_img}}
+          imagePullPolicy: Always
+          volumeMounts:
+            - name: data
+              mountPath: {{.Values.postgres_vol}}
+          env:
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: all-vars
+                  key: POSTGRES_DB
+            - name: POSTGRES_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: all-vars
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  name: all-vars
+                  key: POSTGRES_PASSWORD
+      imagePullSecrets:
+        - name: regcred
+---
+# PostgreSQL StatefulSet Service
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: {{.Values.env_name}}
+  name: {{.Values.postgres_svc}}
+spec:
+  selector:
+    app: {{.Values.postgres_name}}
+  ports:
+    - port: {{.Values.postgres_port}}
+      targetPort: {{.Values.postgres_port}}

@@ -1,0 +1,12 @@
+---
+# Tasks for role infrastructure
+
+- name: Init terraform
+  shell:
+    cmd: terraform init
+
+- name: Initiate infrastructures
+  include_tasks: create.yml
+
+- name: Setup tasks for the automation process
+  include_tasks: setup.yml

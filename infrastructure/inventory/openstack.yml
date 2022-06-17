@@ -1,0 +1,17 @@
+# file must be named openstack.yaml or openstack.yml
+# Make the plugin behave like the default behavior of the old script
+plugin: openstack.cloud.openstack
+clouds_yaml_path:
+  - ./clouds.yaml
+expand_hostvars: yes
+
+groups:
+  nodes: inventory_hostname.startswith('kube-node')
+  master: inventory_hostname.startswith('kube-master')
+  nfs: inventory_hostname.startswith('nfs')
+
+legacy_groups: no
+cache: yes
+cache_plugin: jsonfile
+cache_connection: ./cache/inventory_cache
+show_all: yes

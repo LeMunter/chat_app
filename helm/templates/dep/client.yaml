@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: {{.Values.env_name}}
+  name: {{.Values.client_name}}
+  labels:
+    app: {{.Values.client_name}}
+spec:
+  selector:
+    matchLabels:
+      app: {{.Values.client_name}}
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: {{.Values.client_name}}
+    spec:
+      containers:
+        - name: nginx
+          image: {{.Values.client_img}}
+          imagePullPolicy: Always
+          envFrom:
+          - configMapRef:
+              name: all-vars
+      imagePullSecrets:
+        - name: regcred
+---
+kind: Service
+apiVersion: v1
+metadata:
+  namespace: {{.Values.env_name}}
+  name: {{.Values.client_svc}}
+spec:
+  selector:
+    app: {{.Values.client_name}}
+  ports:
+  - protocol: TCP
+    port: {{.Values.client_port}}
+

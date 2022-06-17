@@ -1,0 +1,7 @@
+---
+- hosts: master
+  become: yes
+  become_user: root
+  become_method: sudo
+  roles:
+    - role: kube_master

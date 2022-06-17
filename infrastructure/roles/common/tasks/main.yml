@@ -1,0 +1,7 @@
+---
+- name: Update and upgrade packages on servers.
+  become: true
+  apt:
+    upgrade: yes
+    update_cache: yes
+    cache_valid_time: 86400 #For one day

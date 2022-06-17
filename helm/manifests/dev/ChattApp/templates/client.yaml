@@ -1,0 +1,41 @@
+---
+# Source: ChattApp/templates/client.yaml
+kind: Service
+apiVersion: v1
+metadata:
+  namespace: development
+  name: client-frontend-svc
+spec:
+  selector:
+    app: client-frontend
+  ports:
+  - protocol: TCP
+    port: 3001
+---
+# Source: ChattApp/templates/client.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: development
+  name: client-frontend
+  labels:
+    app: client-frontend
+spec:
+  selector:
+    matchLabels:
+      app: client-frontend
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: client-frontend
+    spec:
+      containers:
+        - name: nginx
+          image: client-img
+          imagePullPolicy: Always
+          envFrom:
+          - configMapRef:
+              name: all-vars
+      imagePullSecrets:
+        - name: regcred

@@ -1,0 +1,29 @@
+service_names:
+  - 'docker'
+  - 'kubelet'
+packages_to_install:
+  - docker-ce
+  - kubelet
+  - kubeadm
+  - kubectl
+  - nfs-common
+keys_to_add:
+  - https://download.docker.com/linux/ubuntu/gpg
+  - https://packages.cloud.google.com/apt/doc/apt-key.gpg
+repos_to_add:
+  - deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable
+  - deb https://apt.kubernetes.io/ kubernetes-xenial main
+shared_dir:
+  - /postgres
+kube_dir: k8s
+helm_dir: helm
+proxy_svc_port: 80
+nfs_provision_name: nfs-prov
+master_db_pv: mysql-pv
+master_db_pvc: mysql-pvc
+client_provisioner_serviceAccountName: nfs-pod-provisioner-sa
+db_name: db
+wp_name: wp
+grafana_svc: grafana
+gitlab_reg: gitlab.lnu.se:5050/2dv612/student/team-1---ht21/project
+storageclass_name: nfs-sc

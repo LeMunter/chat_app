@@ -1,0 +1,26 @@
+.deploy:
+  stage: deploy
+  rules:
+    - !reference [.rules-deploy, rules]
+  image:
+    name: bitnami/kubectl:latest
+    entrypoint: [""] # default entry point is kubectl but we want to create the kubeconf first.
+  variables:
+    test: $IMG_REGISTRY:$CI_COMMIT_BRANCH
+  before_script:
+    - touch /.kube/config
+    - echo "$K8_CONFIG" > /.kube/config
+    - cat /.kube/config
+  script:
+    - cd helm/manifests/prod/ChattApp/templates
+    - kubectl apply -f ./pvc
+    - cd dep
+    - kubectl create secret docker-registry regcred --namespace="$prod_env" --docker-server="$CI_REGISTRY" --docker-username="$GIT_USERNAME" --docker-password="$GIT_TOKEN" --dry-run=client -o yaml > regcred.yaml
+    - kubectl delete -f . --ignore-not-found
+    - kubectl apply -f .
+    - kubectl wait --for=condition=Ready pods --all -n "$prod_env" --timeout=60s
+  artifacts:
+    paths:
+      - helm/manifests
+  tags:
+    - $CI_RUNNER_TAG

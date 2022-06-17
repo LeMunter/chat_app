@@ -1,0 +1,17 @@
+.npm-install:
+  stage: install-dependencies
+  image: node:16-alpine
+  variables:
+    CI: "false" # Must be added to allow for warnings during build using craco commentary
+  script:
+    - cd $CI_APP_PATH
+    - echo $CI_APP_PATH
+    - npm set cache .npm
+    - npm ci
+  cache:
+    key: "$CI_APP_PATH-$CI_COMMIT_REF_SLUG"
+    paths:
+      - $CI_APP_PATH/node_modules
+      - $CI_APP_PATH/.npm
+  tags:
+    - $CI_RUNNER_TAG

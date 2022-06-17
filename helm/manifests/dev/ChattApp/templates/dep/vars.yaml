@@ -1,0 +1,18 @@
+---
+# Source: ChattApp/templates/dep/vars.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: development
+  name: all-vars
+data:
+  POSTGRES_HOST: "pg-svc"
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: chatapp
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: test
+  PGDATA: /data/pgdata
+  NODE_PORT: "5000"
+  PUBLIC_URL: "194.47.177.79:80"
+  API_CLUSTER_IP: "koa-backend-svc.development.svc.cluster.local:5000"
+  ADMIN_PASS: "temp"

@@ -1,0 +1,52 @@
+---
+# Configure environment for kube master server
+# Ref: https://docs.docker.com/registry/insecure/
+
+- name: Download and add keys for docker
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+
+- name: Add docker repository
+  apt_repository:
+    repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable
+    state: present
+
+- name: Installing Docker package
+  apt:
+    name: docker-ce
+    state: present
+    update_cache: yes
+    cache_valid_time: 0
+
+- name: Starting and enabling Docker
+  systemd:
+    name: docker
+    state: started
+    enabled: yes
+
+
+  
+# Check containers to see if registry already exists
+- name: Check docker containers
+  shell: "docker container ls"
+  ignore_errors: True
+  register: output
+  become: yes
+  become_user: root
+
+- debug:
+    var: output.stdout.find('registry') == -1
+
+# Error when running more the one time
+- name: Pulling Docker registry image
+  command: docker run -d -p 5000:5000 --restart always --name registry registry:2
+  when: output.stdout.find('registry') == -1
+
+# Insecure solution better solution should be implemented  
+- name: Updating daemon.json
+  template:
+    src: daemon.json.j2
+    dest: /etc/docker/daemon.json
+  notify:
+    - Restart docker

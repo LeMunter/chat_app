@@ -1,0 +1,44 @@
+env_name: development # Is overwritten in deployment
+
+# Postgres vars
+postgres_img: postgres-img # Is overwritten in deployment
+postgres_name: postgres 
+postgres_svc: pg-svc
+postgres_port: 5432
+postgres_db_name: chatapp
+postgres_user: postgres
+postgres_password: test # Is overwritten in deployment
+db_env_name: data
+postgres_vol: /data
+
+# PGadmin vars
+pgadmin_port: 80
+pgadmin_name: pgadmin
+pgadmin_pass: SuperSecret
+pgadmin_svc: pgadmin-svc
+pgadmin_default_user: test@test.com
+pgdata: /data/pgdata # Not currently used
+
+# Client vars
+client_img: client-img # Is overwritten in deployment
+client_name: client-frontend
+client_svc: client-frontend-svc
+client_port: 3001
+public_url: "194.47.177.79:80"
+
+# Server vars
+server_img: server-img # Is overwritten in deployment
+server_port: 5000
+server_name: koa-backend
+server_svc: koa-backend-svc
+
+# Proxy vars
+proxy_name: proxy
+proxy_svc: proxy-svc
+proxy_port: 32162 # Is overwritten in deployment
+
+# Misc vars
+storageclass_name: nfs-sc
+lb_port: 80 # Is overwritten in deployment
+lb_ip: http://localhost/ # Is overwritten in deployment
+adminPassword: temp
